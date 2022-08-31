@@ -1,5 +1,5 @@
 
 void setupFetch()
 {
-    Serial.println("Setup: Fetch");
+    Serial.println("✅  Setup: Fetch");
 }

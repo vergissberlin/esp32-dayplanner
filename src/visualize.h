@@ -1,8 +1,17 @@
+#include <Arduino.h>
 #include <GxEPD.h>
+#include <GxIO/GxIO_SPI/GxIO_SPI.h>
+#include <GxIO/GxIO.h>
+#include <ArduinoJson.h>
+
+// FreeFonts from Adafruit_GFX
+#include <Fonts/FreeSans9pt7b.h>
+#include <Fonts/FreeSansBold9pt7b.h>
 
 // #include <GxGDE0213B72B/GxGDE0213B72B.h>       // 2.13" b/w
 #include <GxGDEH0213B73/GxGDEH0213B73.h> // 2.13" b/w newer panel
 
+// https://javl.github.io/image2cpp/
 // 'planner214x45', 214x45px
 const unsigned char epd_bitmap_planner214x45[] PROGMEM = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -92,16 +101,8 @@ const unsigned char *epd_bitmap_allArray[1] = {
 #define ELINK_RESET 16
 #define ELINK_DC 17
 
-// FreeFonts from Adafruit_GFX
-#include <Fonts/FreeSans9pt7b.h>
-#include <Fonts/FreeSansBold9pt7b.h>
-
-#include <GxIO/GxIO_SPI/GxIO_SPI.h>
-#include <GxIO/GxIO.h>
-
 GxIO_Class io(SPI, /*CS=5*/ ELINK_SS, /*DC=*/ELINK_DC, /*RST=*/ELINK_RESET);
 GxEPD_Class display(io, /*RST=*/ELINK_RESET, /*BUSY=*/ELINK_BUSY);
-SPIClass sdSPI(VSPI);
 
 int
     startXcol1 = 12,
@@ -109,19 +110,28 @@ int
     lineHeight = 22;
 int startXcol2 = startXcol1 + 54;
 
-void setupDisplay(appointments)
+void setupVisualize(String appointmentJSON)
 {
+    Serial.println("✅  Setup: Visulize");
 
-    Serial.println("Setup: Display");
+    // JSON Deserialize
+    StaticJsonDocument<512> appointments;
+    DeserializationError error = deserializeJson(appointments, appointmentJSON);
+    if (error)
+    {
+        Serial.print(F("ⓘ deserializeJson() failed: "));
+        Serial.println(error.f_str());
+        return;
+    }
 
-    display.init(); // enable diagnostic output on Serial
-
+    // Enable diagnostic output on Serial
+    display.init();
     display.setRotation(1);
     display.fillScreen(GxEPD_WHITE);
     display.setTextColor(GxEPD_BLACK);
     display.setCursor(0, 0);
 
-    display.fillScreen(GxEPD_WHITE);
+    // Draw images
     display.drawBitmap(epd_bitmap_planner214x45, display.width() / 2 - 214 / 2, 0, 214, 45, GxEPD_WHITE);
     display.drawLine(0, 45, display.width(), 45, GxEPD_BLACK);
 
